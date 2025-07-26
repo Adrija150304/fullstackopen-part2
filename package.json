@@ -1,9 +1,5 @@
 {
-<<<<<<< HEAD
   "name": "phonebook",
-=======
-  "name": "courseinfo",
->>>>>>> 18fd71a2785f38c1bf62ff0fbed211bf1f635c4f
   "private": true,
   "version": "0.0.0",
   "type": "module",
