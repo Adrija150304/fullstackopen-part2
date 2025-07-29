@@ -1,9 +1,12 @@
+// App.jsx
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import CountryDetails from './components/CountryDetails'
 
-function App() {
+const App = () => {
   const [countries, setCountries] = useState([])
-  const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('')
+  const [selectedCountry, setSelectedCountry] = useState(null)
 
   useEffect(() => {
     axios.get('https://studies.cs.helsinki.fi/restcountries/api/all')
@@ -12,47 +15,41 @@ function App() {
       })
   }, [])
 
-  const handleSearchChange = (event) => {
-    setSearch(event.target.value)
+  const handleFilterChange = (event) => {
+    setFilter(event.target.value)
+    setSelectedCountry(null)
   }
 
-  const filtered = countries.filter(country =>
-    country.name.common.toLowerCase().includes(search.toLowerCase())
+  const handleShowClick = (country) => {
+    setSelectedCountry(country)
+  }
+
+  const filteredCountries = countries.filter(country =>
+    country.name.common.toLowerCase().includes(filter.toLowerCase())
   )
 
   return (
     <div>
+      <h1>Country Finder</h1>
       <div>
-        find countries <input value={search} onChange={handleSearchChange} />
+        find countries: <input value={filter} onChange={handleFilterChange} />
       </div>
 
-      {filtered.length > 10 && <p>Too many matches, specify another filter</p>}
-
-      {filtered.length <= 10 && filtered.length > 1 && (
-        <ul>
-          {filtered.map(country => (
-            <li key={country.cca3}>{country.name.common}</li>
-          ))}
-        </ul>
-      )}
-
-      {filtered.length === 1 && (
-        <div>
-          <h2>{filtered[0].name.common}</h2>
-          <p>Capital: {filtered[0].capital?.[0]}</p>
-          <p>Area: {filtered[0].area} km²</p>
-          <h4>Languages:</h4>
-          <ul>
-            {Object.values(filtered[0].languages).map(lang => (
-              <li key={lang}>{lang}</li>
-            ))}
-          </ul>
-          <img
-            src={filtered[0].flags.png}
-            alt={`Flag of ${filtered[0].name.common}`}
-            width="150"
-          />
-        </div>
+      {selectedCountry ? (
+        <CountryDetails country={selectedCountry} />
+      ) : filteredCountries.length > 10 ? (
+        <p>Too many matches, specify another filter</p>
+      ) : filteredCountries.length > 1 ? (
+        filteredCountries.map(country => (
+          <div key={country.cca3}>
+            {country.name.common}
+            <button onClick={() => handleShowClick(country)}>Show</button>
+          </div>
+        ))
+      ) : filteredCountries.length === 1 ? (
+        <CountryDetails country={filteredCountries[0]} />
+      ) : (
+        <p>No matches found</p>
       )}
     </div>
   )
