@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import personService from './services/persons'
 
 const App = () => {
@@ -8,54 +8,57 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    personService
-      .getAll()
-      .then(initialPersons => {
-        setPersons(initialPersons)
-      })
+    personService.getAll().then(initialPersons => {
+      setPersons(initialPersons)
+    })
   }, [])
+
+  const handleNameChange = (event) => setNewName(event.target.value)
+  const handleNumberChange = (event) => setNewNumber(event.target.value)
+  const handleSearchChange = (event) => setSearchTerm(event.target.value)
 
   const handleAddPerson = (event) => {
     event.preventDefault()
     const existingPerson = persons.find(p => p.name === newName)
 
     if (existingPerson) {
-      alert(`${newName} is already added to the phonebook`)
-      return
-    }
+      const confirmUpdate = window.confirm(
+        `${newName} is already added to phonebook, replace the old number with a new one?`
+      )
+      if (confirmUpdate) {
+        const updatedPerson = { ...existingPerson, number: newNumber }
+        personService
+          .update(existingPerson.id, updatedPerson)
+          .then(returnedPerson => {
+            setPersons(persons.map(p => p.id !== existingPerson.id ? p : returnedPerson))
+            setNewName('')
+            setNewNumber('')
+          })
+      }
+    } else {
+      const newPerson = {
+        name: newName,
+        number: newNumber
+      }
 
-    const newPerson = {
-      name: newName,
-      number: newNumber,
-    }
-
-    personService
-      .create(newPerson)
-      .then(returnedPerson => {
+      personService.create(newPerson).then(returnedPerson => {
         setPersons(persons.concat(returnedPerson))
         setNewName('')
         setNewNumber('')
       })
-  }
-
-  const handleDelete = (id, name) => {
-    const confirmDelete = window.confirm(`Delete ${name}?`)
-    if (confirmDelete) {
-      personService
-        .remove(id)
-        .then(() => {
-          setPersons(persons.filter(person => person.id !== id))
-        })
-        .catch(error => {
-          alert(`The person '${name}' was already removed from server`)
-          setPersons(persons.filter(person => person.id !== id))
-        })
     }
   }
 
-  const handleNameChange = (event) => setNewName(event.target.value)
-  const handleNumberChange = (event) => setNewNumber(event.target.value)
-  const handleSearchChange = (event) => setSearchTerm(event.target.value)
+  const handleDeletePerson = (id) => {
+    const person = persons.find(p => p.id === id)
+    const confirmDelete = window.confirm(`Delete ${person.name}?`)
+
+    if (confirmDelete) {
+      personService.remove(id).then(() => {
+        setPersons(persons.filter(p => p.id !== id))
+      })
+    }
+  }
 
   const personsToShow = persons.filter(person =>
     person.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -71,7 +74,6 @@ const App = () => {
       </div>
 
       <h3>Add a new</h3>
-
       <form onSubmit={handleAddPerson}>
         <div>
           name: <input value={newName} onChange={handleNameChange} />
@@ -86,14 +88,12 @@ const App = () => {
 
       <h3>Numbers</h3>
       <ul>
-        {personsToShow.map(person => (
+        {personsToShow.map(person =>
           <li key={person.id}>
             {person.name} {person.number}{' '}
-            <button onClick={() => handleDelete(person.id, person.name)}>
-              delete
-            </button>
+            <button onClick={() => handleDeletePerson(person.id)}>delete</button>
           </li>
-        ))}
+        )}
       </ul>
     </div>
   )
